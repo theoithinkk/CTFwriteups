@@ -79,6 +79,8 @@ Then build `writeup.docx` with `tools/md2docx.py` (needs python-docx: `pip insta
 | I | Under Construction | DONE: `PacketCapture{GEOCITIES_26OCT2009}` |
 | I | Hidden Profile | DONE: `PacketCapture{w4YbAcK_R0ck5_s0_coO1}` |
 | I | Silent Observer | DONE: `PacketCapture{+81366570748}` |
+| II | Internal Trouble | DONE: `PacketCapture{y0u_d1dNt_s33_th4T_c0m1ng_fd23bace}` (SSRF via [::1]:3001) |
+| II | Forgotten Router | DONE: `PacketCapture{r0ut3_99_bb6cfead}` (exposed /flag.txt) |
 | - | All others | Not started |
 
 Update this table whenever a challenge's status changes.
