@@ -4,6 +4,7 @@ from docx.shared import Inches, Pt
 for md in sys.argv[1:]:
     base = os.path.dirname(md)
     doc = Document()
+    props = doc.core_properties; props.author = props.last_modified_by = "Theodore Garcia"; props.comments = ""
     st = doc.styles["Normal"]; st.font.name = "Calibri"; st.font.size = Pt(10.5)
     lines = open(md, encoding="utf8").read().splitlines()
     doc.add_heading(os.path.basename(base).replace("(DONE) ", ""), level=1)
