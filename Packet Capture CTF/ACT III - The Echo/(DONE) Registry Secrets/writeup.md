@@ -1,5 +1,5 @@
 Flag: PacketCapture{VOLATILE_MEMORY}
-Category: Digital Forensics (Memory)
+Category: Forensics (Memory)
 Tools used: strings, Python
 
 Steps:

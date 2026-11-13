@@ -1,5 +1,5 @@
 Flag: PacketCapture{3ch0_1n_7h3_r36157ry}
-Category: Digital Forensics
+Category: Forensics
 Tools used: Python, strings
 
 Steps:

@@ -1,5 +1,5 @@
 Flag: PacketCapture{RECOVERED_DOCUMENT}
-Category: Digital Forensics (Disk / File Carving)
+Category: Forensics (disk file carving)
 Tools used: strings, Python (zipfile)
 
 Steps:

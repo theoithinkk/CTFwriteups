@@ -1,3 +1,21 @@
 .claude/
 __pycache__/
 *.pyc
+*.stackdump
+
+# CSCTF and Pink CTF folders also hold each challenge's handout files (captures, disk images, encrypted
+# evidence, binaries). Those are the organisers' files, so only my own work is committed:
+# the writeup, its screenshots and my solve scripts.
+CSCTF/**
+Pink CTF/**
+!CSCTF/**/
+!Pink CTF/**/
+!CSCTF/**/writeup.md
+!Pink CTF/**/writeup.md
+!CSCTF/**/writeup.docx
+!Pink CTF/**/writeup.docx
+!CSCTF/**/screenshots/**
+!Pink CTF/**/screenshots/**
+!CSCTF/**/solve.py
+!Pink CTF/**/solve.py
+!CSCTF/Forensics/Ortelia VDR Carving/find_magics.py

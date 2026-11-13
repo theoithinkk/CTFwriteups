@@ -1,5 +1,5 @@
 Flag: PacketCapture{DEVICE_HISTORY}
-Category: Digital Forensics
+Category: Forensics
 Tools used: text editor, Python
 
 Steps:

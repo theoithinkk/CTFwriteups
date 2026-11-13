@@ -1,5 +1,5 @@
 Flag: PacketCapture{gh057_h057_l457_53n}
-Category: Network Forensics
+Category: Network
 Tools used: Python (dpkt)
 
 Steps:

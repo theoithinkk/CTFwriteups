@@ -1,5 +1,5 @@
 Flag: PacketCapture{r0ut3_99_bb6cfead}
-Category: Web Exploitation (information disclosure / exposed file)
+Category: Web (information disclosure / exposed file)
 Tools used: curl (Burp Suite equivalent for crafting HTTP requests)
 
 Steps:

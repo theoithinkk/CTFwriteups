@@ -32,7 +32,9 @@ Steps:
 
      ![Commit 55a64f3 removing the leaked key](screenshots/03_diff_leaked_key.png)
 
-4. Verification: submitted the third value and the site accepted it.
+4. Verification: submit the real flag
+   - What I did: submitted the third value.
+   - Result: the site accepted it.
 
 Key insight: Deleting a secret in a new commit doesn't remove it from git history. Always read the diffs, not just
 the latest files, and expect decoys when several flag-shaped strings appear.
