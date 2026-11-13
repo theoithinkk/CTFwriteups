@@ -1,13 +1,8 @@
 Challenge: Vesper Quay Board — Web / Medium / 291 pts / author: Mohamed Amine Mzoughi (CSCTF 2026)
 Flag: CSCTF{9zAhGxCqntrgDYN2GhxrnII8}
-Category: Web / API (parser-differential RCE + Ed25519 signing with the victim's own key)
+Category: Web (parser-differential RCE)
 Tools used: curl, Python (stdlib only), solve.py
-
-Brief: a duty desk approves freight "warrants". A forged warrant diverted a convoy. To stop it I must file a
-"correction" signed by a release the quay actually runs. The desk accepts only the approved courier with a trivial
-argv; the quay runs `python3 -I <argv>` but only when it reads the LEGACY courier. The desk and quay parse the same
-request body with different JSON engines, so one body can be read two ways — that split gives code execution on the
-quay, where the signing key lives. Each instance launch is a fresh case; values below are for my case.
+Brief: a duty desk approves freight "warrants". A forged warrant diverted a convoy. To stop it I must file a "correction" signed by a release the quay actually runs. The desk accepts only the approved courier with a trivial argv; the quay runs `python3 -I <argv>` but only when it reads the LEGACY courier. The desk and quay parse the same request body with different JSON engines, so one body can be read two ways — that split gives code execution on the quay, where the signing key lives. Each instance launch is a fresh case; values below are for my case.
 
 Steps:
 1. Start point: GET /v1/openapi.json on the desk.
@@ -47,42 +42,15 @@ Steps:
      (JCS: keys sorted, bool before string, no spaces — matches world.canonical and its unit test).
    - sig = STATION_SIGN(canonical) (64 bytes) -> standard Base64 -> "signature".
    - POST EDGE_URL/v1/corrections with the five fields + signature -> 200 {"clearance_code":"CSCTF{9zAhGxCqntrgDYN2GhxrnII8}"}.
+   - Result: a live run of solve.py against a freshly fetched instance (w02.ctf.chronos-security.ro:33800) read this
+     case's couriers from /v1/warrants/current, posted the single JSON body with duplicate case-folded keys (the desk
+     Go decoder folds COURIER/ARGV last-wins to the approved courier + ["status"] and accepts; the quay's Python
+     reads the exact lowercase courier/argv as the legacy courier + ["-c", <loader>] and runs it), the quay loader
+     station-signed the correction, and the HTTP 200 returned loader_stdout {"clearance_code":"CSCTF{oSijHownvUlrnHbA3Rw76QNo}"}.
+     Each instance is a new case, so this clearance code differs from the documented flag above.
 
-Reproduce: python -I solve.py http://HOST:PORT
-  (GETs the couriers, sends the case-folded warrant whose quay loader signs the canonical bytes with STATION_SIGN
-  and files the correction, then prints clearance_code. A built-in demo() asserts the JCS canonicalization against
-  the server's own test vector. Note: instances are per-launch and expire; the run that captured the flag returned
-  HTTP 200 with the clearance_code.)
+     ![Vesper Quay Board — live parser-differential warrant and the quay loader_stdout clearance code](screenshots/02_parser_differential_flag.jpg)
 
-Key insight: two JSON parsers, one request. Go's encoding/json folds key case and takes the last duplicate; Python's
-json is exact and case-sensitive. The desk validated the UPPER-case keys while the quay executed the lower-case
-ones — a confused-deputy that turns a "safe" validation into attacker-chosen code on the box that holds the signing
-key. From there the signature is genuine, so the forged-warrant defense (requiring a station signature) is satisfied
-by the station itself.
-
-Defensive takeaways (API security / GRC angle):
-- One canonical parse. Never let a gateway/validator and the executor parse the same bytes with different libraries
-  or settings. Normalize once (one parser, reject duplicate keys, reject unknown members, fix case policy) and pass
-  the PARSED, re-serialized object downstream — not the raw body.
-- Case-insensitive key matching (Go encoding/json default) is a footgun next to a case-sensitive consumer. Decode
-  into explicit structs with DisallowUnknownFields on BOTH sides, and compare the parsed values, not the text.
-- Don't run an interpreter on request-controlled argv, even "only for the legacy courier". The courier check was the
-  only guard and it was bypassable; there was no sandbox boundary between "validated" and "executed".
-- Keep signing oracles off any box reachable by untrusted input. STATION_SIGN signs arbitrary stdin; code execution
-  next to it is equivalent to key theft. Scope signers to fixed, server-built payloads, or require a separate
-  authorization the attacker cannot forge.
-
-Live reproduction against a freshly-fetched instance. solve.py reads this case's couriers from
-`/v1/warrants/current`, sends the case-folded warrant whose quay loader signs the canonical bytes with
-STATION_SIGN and files the correction, then prints the clearance_code echoed in the quay's loader_stdout
-(per-instance flag differs from the documented one above):
-
-```text
-$ python -I solve.py http://w02.ctf.chronos-security.ro:33800
-loader_stdout: {"clearance_code":"CSCTF{oSijHownvUlrnHbA3Rw76QNo}"}
-FLAG: CSCTF{oSijHownvUlrnHbA3Rw76QNo}
-```
-
-Live-instance capture — `solve.py` run against a freshly fetched instance. It posts the single JSON body with duplicate case-folded keys (desk Go folds `COURIER`/`ARGV` last-wins to the approved courier + `["status"]` and accepts; the quay's Python reads the exact lowercase `courier`/`argv` as the legacy courier + `["-c", <loader>]` and executes it); the quay loader station-signs the correction and the HTTP 200 returns the `clearance_code`. The terminal shows the genuine `loader_stdout` and the captured flag (each instance is a new case, so this clearance code differs from the documented flag above):
-
-![Vesper Quay Board — live parser-differential warrant and the quay loader_stdout clearance code](screenshots/02_parser_differential_flag.jpg)
+Key insight: two JSON parsers, one request. Go's encoding/json folds key case and takes the last duplicate; Python's json is exact and case-sensitive. The desk validated the UPPER-case keys while the quay executed the lower-case ones — a confused-deputy that turns a "safe" validation into attacker-chosen code on the box that holds the signing key. From there the signature is genuine, so the forged-warrant defense (requiring a station signature) is satisfied by the station itself.
+Defensive takeaways: One canonical parse — never let a gateway/validator and the executor parse the same bytes with different libraries or settings; normalize once (one parser, reject duplicate keys, reject unknown members, fix case policy) and pass the PARSED, re-serialized object downstream, not the raw body. Case-insensitive key matching (Go encoding/json default) is a footgun next to a case-sensitive consumer, so decode into explicit structs with DisallowUnknownFields on BOTH sides and compare the parsed values, not the text. Don't run an interpreter on request-controlled argv, even "only for the legacy courier" — the courier check was the only guard and it was bypassable, with no sandbox boundary between "validated" and "executed". Keep signing oracles off any box reachable by untrusted input; STATION_SIGN signs arbitrary stdin, so code execution next to it is equivalent to key theft — scope signers to fixed, server-built payloads, or require a separate authorization the attacker cannot forge.
+Reproduce: python -I solve.py http://HOST:PORT (GETs the couriers, sends the case-folded warrant whose quay loader signs the canonical bytes with STATION_SIGN and files the correction, then prints clearance_code; a built-in demo() asserts the JCS canonicalization against the server's own test vector, and instances are per-launch and expire)

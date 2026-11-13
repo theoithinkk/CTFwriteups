@@ -1,17 +1,10 @@
 Challenge: Helioform Relay — Web / Hard / 682 pts / author: Ahmed Abdelmoemen (CSCTF 2026)
 Flag: CSCTF{3vT2AVuphrSCp62fiWdAFdB2}
-Challenge name: Helioform Relay  (Web / Hard / 682 pts, by Ahmed Abdelmoemen)
-Category: Web (ICS/OT-themed) (open agent wire -> loopback SSRF -> dotenv/key leak -> forged cookie -> replication-write RCE)
+Category: Web (loopback SSRF to RCE)
 Tools used: Python (stdlib: socket, hmac, hashlib, struct, base64), solve.py
+Brief: Helioform Relay 4.2. An inert Helioform Relay appliance sits at the edge of the Kovari National Grid. A single service exposes an HTTP server, a WebSocket mesh and an admin console. "Somewhere between the legacy agent wire and the compliance ledger there is a path the provisioner never closed." Walk the appliance end-to-end and recover the staged incident tasking / flag. The chain is five flaws, each "a path the provisioner never closed." Host: http://w01.ctf.chronos-security.ro:37134 (/docs/hsp documents the mesh protocol; /console/login is the operator console).
 
-Challenge (Helioform Relay 4.2): An inert Helioform Relay appliance sits at the edge of the Kovari National Grid.
-A single service exposes an HTTP server, a WebSocket mesh and an admin console. "Somewhere between the legacy agent
-wire and the compliance ledger there is a path the provisioner never closed." Walk the appliance end-to-end and
-recover the staged incident tasking / flag. Host: http://w01.ctf.chronos-security.ro:37134 (/docs/hsp documents the
-mesh protocol; /console/login is the operator console).
-
-The chain (five flaws, each "a path the provisioner never closed"):
-
+Steps:
 1. Open agent wire (authentication bypass).
    - /docs/hsp: the customer mesh is a WebSocket at /mesh with subprotocol hsp.ws.1; on-box agents use hsp.raw.1
      ("A normal WebSocket client must not send hsp.raw.1. That subprotocol exists for the appliance agent"). The
@@ -19,6 +12,8 @@ The chain (five flaws, each "a path the provisioner never closed"):
      the hsp.raw.1 subprotocol drops me onto the raw HSP byte stream unauthenticated.
    - HSP framing: magic "HSP1", opcode (u16 LE), flags (u16 LE), body length (u32 LE), body. HELLO (0x01) returns:
      auth=legacy-proxy, commands=HELLO:0x01,PING:0x02,DIAL:0x10, dial=host:port, egress=127.0.0.1.
+
+     ![Helioform Relay — /docs/hsp mesh protocol doc exposing the unauthenticated hsp.raw.1 on-box agent wire](screenshots/01_agent_wire_doc.jpg)
 
 2. DIAL = built-in loopback SSRF.
    - DIAL (0x10) splices the connection to host:port but is locked to literal 127.0.0.1 (egress denied otherwise).
@@ -53,57 +48,15 @@ The chain (five flaws, each "a path the provisioner never closed"):
      scheduler executes it (the runbook body is Python after the "HSP-RUNBOOK" header line), running as helio; its
      stdout on /console/automation reads /tmp/flag (/flag -> /tmp/flag):
        uid=999(helio) ... ===FLAG CSCTF{3vT2AVuphrSCp62fiWdAFdB2}
-   - Live reproduction against a freshly-fetched instance. The replication cluster key is the raw dotenv
-     string (ASCII), matching how the console cookie MAC key is used; per-instance flag differs from the
-     documented one above:
+   - Result: a live reproduction against a freshly fetched instance (w02.ctf.chronos-security.ro:33799) leaked the
+     console and replication MAC keys, read recordd epoch=7 on repl_port=7713, sent the signed repl hello (ok) and a
+     mode-1 commit (ok path=/var/lib/helioform/runbooks/pwn), and after the scheduler ran the runbook the forged-admin
+     /console/automation showed uid=999(helio) and the staged incident tasking CSCTF{xVDh8BbcQtGleeGgrtJLoYh1}. The
+     replication cluster key is the raw dotenv string (ASCII), matching how the console cookie MAC key is used; the
+     per-instance flag differs from the documented one above.
 
-```text
-$ python -I solve.py w02.ctf.chronos-security.ro 33799
-[*] leaked: {'CONSOLE_MAC_KEY': '7f3c9a2e1b84d056a0c3e91f44b7d2aa', 'CONSOLE_ISS': 'helioform-factory', 'CONSOLE_AUD': 'relay-console', 'REPLICATION_MAC_KEY': 'c1d4e8f02a6b9375d0e1f4a8b2c65d90'}
-[*] recordd epoch=7 repl_port=7713
-[*] repl hello -> b'ok\n'
-[*] commit -> b'ok path=/var/lib/helioform/runbooks/pwn\n'
-[*] waiting for scheduler to run the runbook...
+     ![Helioform Relay — forged-admin /console/automation showing the runbook RCE stdout as uid=999(helio) and the flag](screenshots/02_flag_console.jpg)
 
-[+] FLAG: CSCTF{xVDh8BbcQtGleeGgrtJLoYh1}
-```
-
-Live-instance captures (genuine live-server pages):
-
-Path step — the agent wire (flaw 1). The mesh protocol doc at `/docs/hsp` documents the on-box `hsp.raw.1`
-subprotocol and asserts "the edge authenticates an agent before it can open a channel" — but nothing enforces it,
-so requesting `hsp.raw.1` drops an unauthenticated client straight onto the raw HSP byte stream used by the loopback
-services the DIAL primitive then reaches:
-
-![Helioform Relay — /docs/hsp mesh protocol doc exposing the unauthenticated hsp.raw.1 on-box agent wire](screenshots/01_agent_wire_doc.jpg)
-
-Flag — the end of the chain (flaw 5) rendered live. With the leaked `CONSOLE_MAC_KEY` a break-glass admin cookie
-is forged and the Mesh operator console opens; the replication-write RCE dropped a runbook into
-`/var/lib/helioform/runbooks`, and the scheduler runs it as the relay user every 5s and mirrors its stdout to
-`/console/automation` — the genuine admin page shows `uid=999(helio)` and the staged incident tasking (the flag;
-per-instance flag differs from the documented one above):
-
-![Helioform Relay — forged-admin /console/automation showing the runbook RCE stdout as uid=999(helio) and the flag](screenshots/02_flag_console.jpg)
-
-Reproduce: python solve.py w01.ctf.chronos-security.ro 37134
-   (opens hsp.raw.1, DIALs the loopback services, mints a catalogd ticket, exports relay.env via provd for both
-   MAC keys, speaks hsp-repl/1 to recordd's 7713 wire -- signed hello + mode-1 commit with an absolute stream_id --
-   to drop a Python runbook into /var/lib/helioform/runbooks, forges the admin console cookie, and reads the
-   runbook stdout from /console/automation; prints the flag. stdlib only.)
-
-Key insight: defence-in-depth that is never enforced is decoration. An "agent-only" subprotocol with no auth, a
-dial primitive that is loopback SSRF, secrets a verifier signs with sitting in a reachable dotenv, a MAC key only
-as safe as every service that can read it, and os.path.join(root, attacker) that an absolute path walks straight
-out of -- each is routine, and chained they go from an inert bench to code execution as the relay user.
-
-Defensive takeaways (OT / GRC angle):
-- Enforce the auth you document. "Agents authenticate first" and "customers must not use hsp.raw.1" must be code,
-  not a sentence; reject the agent subprotocol from untrusted peers.
-- A loopback dial/splice is SSRF. Treat any proxy-to-127.0.0.1 primitive as an internet-facing request to every
-  internal service, and segment/authenticate those services independently.
-- Keep signing material out of readable config and off boxes reachable by untrusted input. A console-cookie MAC
-  key in a dotenv the mesh can export is equivalent to admin; scope key access and never let one leak forge another.
-- Canonicalise and confine every path: reject absolute paths and "..", resolve the realpath, and check the prefix
-  before writing -- os.path.join silently honours an absolute second argument.
-- The compliance ledger must not be executable. Storing replicated "stream" content where a scheduler runs it turns
-  a data-write primitive into RCE; separate audit data from anything the system executes.
+Key insight: defence-in-depth that is never enforced is decoration. An "agent-only" subprotocol with no auth, a dial primitive that is loopback SSRF, secrets a verifier signs with sitting in a reachable dotenv, a MAC key only as safe as every service that can read it, and os.path.join(root, attacker) that an absolute path walks straight out of -- each is routine, and chained they go from an inert bench to code execution as the relay user.
+Defensive takeaways: Enforce the auth you document; "agents authenticate first" and "customers must not use hsp.raw.1" must be code, not a sentence, and the agent subprotocol must be rejected from untrusted peers. A loopback dial/splice is SSRF, so treat any proxy-to-127.0.0.1 primitive as an internet-facing request to every internal service, and segment/authenticate those services independently. Keep signing material out of readable config and off boxes reachable by untrusted input; a console-cookie MAC key in a dotenv the mesh can export is equivalent to admin, so scope key access and never let one leak forge another. Canonicalise and confine every path (reject absolute paths and "..", resolve the realpath, and check the prefix before writing), because os.path.join silently honours an absolute second argument. The compliance ledger must not be executable; storing replicated "stream" content where a scheduler runs it turns a data-write primitive into RCE, so separate audit data from anything the system executes.
+Reproduce: python solve.py w01.ctf.chronos-security.ro 37134 (opens hsp.raw.1, DIALs the loopback services, mints a catalogd ticket, exports relay.env via provd for both MAC keys, speaks hsp-repl/1 to recordd's 7713 wire -- signed hello + mode-1 commit with an absolute stream_id -- to drop a Python runbook into /var/lib/helioform/runbooks, forges the admin console cookie, and reads the runbook stdout from /console/automation; prints the flag; stdlib only)
