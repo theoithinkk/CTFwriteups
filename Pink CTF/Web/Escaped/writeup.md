@@ -28,7 +28,7 @@ Steps:
 
      ![Live solve run printing the flag](screenshots/01_solve_run.png)
 
-Key insight: Escaping characters is not the same as parameterizing a query, and the flag says it outright: 0x5C is not always a backslash. addslashes and mysqli_real_escape_string prepend 0x5C to a quote, but on a multibyte connection (GBK and similar) a lead byte can consume that 0x5C, so the quote survives.
+Key insight: A raw 0xBF byte before the quote swallowed the escaper's 0x5C backslash on a multibyte connection, so the quote survived and broke out of the SQL string. Escaping is not parameterizing, and the flag says so: 0x5C is not always a backslash. addslashes and mysqli_real_escape_string prepend 0x5C to a quote, but on a multibyte connection (GBK and similar) a lead byte can consume that 0x5C, so the quote survives.
 
 Defensive takeaways: Use prepared statements with bound parameters, so the data never re-enters the SQL text and byte-boundary tricks cannot help. Set the connection charset to utf8mb4 with mysqli_set_charset so the escaper and the server agree on boundaries. From a GRC angle, "input is escaped" is not a control you can tick. The control is parameterized queries, verified in code review.
 

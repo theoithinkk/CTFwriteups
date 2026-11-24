@@ -1,5 +1,5 @@
 Flag: PacketCapture{+81366570748}
-Category: OSINT (Medium)
+Category: OSINT (metadata, what3words, phone lookup)
 Tools used: PNG metadata inspection (Python PIL / exiftool), Python (Base64 + ROT13), X/Twitter, tomydearest.xyz, what3words, Google Maps
 
 Steps:
@@ -51,10 +51,10 @@ Steps:
 6. Pivot: the venue on Google Maps.
    - What I did: looked up cafe capyba on Google Maps.
    - Result: 1-31-3 Higashimukojima, Sumida City, Tokyo; phone +81 3-6657-0748.
-   - Formatting: the number without spaces or dashes, in international format: PacketCapture{+81366570748}.
+   - Thinking: the brief says the venue takes reservations by phone, so the Maps listing holds the answer.
+   - Result: written without spaces or dashes in international format, the number gives PacketCapture{+81366570748}.
 
      ![Google Maps listing with the phone number](screenshots/06_google_maps_phone.png)
 
-Key insight: Each clue was in an overlooked place (image metadata, an encoded tweet, a what3words address hidden in
-an anonymous message), while the obvious leads (the face in the photo, the account's food posts) were decoys. The
+Key insight: Each clue sat in an overlooked place (image metadata, an encoded tweet, a what3words address in an anonymous message) and ended at a cafe's phone number. The obvious leads (the face in the photo, the account's food posts) were decoys. The
 account's own "throwaway" tweets explained how to use each clue.

@@ -1,6 +1,6 @@
 Flag: PINK{this_is_a_great_challenge_because_you_know_new_things_now}
 Category: Steganography (atomic number encoding)
-Tools used: Python (solve.py), periodic table lookup
+Tools used: Python, periodic table lookup
 
 Brief: The challenge provides 30 integers: 120330 70861 21392 70861 21392 62839 100275 113645 8022 1337 17381 5348 26740 123004 45458 52143 10696 123004 25403 136374 98938 13370 98938 120330 70861 9359 141722 9359 10696 98938
 
@@ -15,17 +15,20 @@ Steps:
    - Thinking: small integers that all fit the range of the periodic table are more likely element numbers than random data.
    - Result: looking each atomic number up in order gives the element symbols Th I S I S Ag Re At C H Al Be Ca U Se Y O U K No W Ne W Th I N Sg N O W.
 
-3. Pivot: read the element symbols as letters
+3. Decode: read the element symbols as letters
    - What I did: concatenated the symbols to get ThISISAgReAtCHAlBeCaUSeYOUKNoWNeWThINSgNOW, then regrouped them as letters.
    - Result: the sentence THIS IS A GREAT CHALLENGE BECAUSE YOU KNOW NEW THINGS NOW.
    - Thinking: the symbols only look like noise when read as chemistry. Read as letter groups they spell English words.
 
-     ![Solver output with the recovered flag](screenshots/01_solve_output.png)
-
-4. Result: recover the flag
+4. Flag: build the flag from the sentence
    - What I did: converted the sentence to lowercase and replaced spaces with underscores to match the challenge's flag convention.
    - Result: PINK{this_is_a_great_challenge_because_you_know_new_things_now}
+   - Thinking: the sentence is the decoded message, so the flag is that sentence inside PINK{...}.
 
-Key insight: The numbers are 1337 times an atomic number. Dividing by 1337 exposes the atomic numbers, and converting those numbers to periodic-table symbols reveals the hidden message.
+     ![Solver output listing the quotients, element symbols, sentence and the final flag](screenshots/01_solve_output.png)
+
+Key insight: Every number was 1337 times an atomic number, so dividing by 1337 and reading the element symbols as letters spelled the hidden sentence.
+
+Reproduce: run python -I solve.py.
 
 Note: the screenshot is real output from solve.py, and rerunning it against the sequence verifies the result.

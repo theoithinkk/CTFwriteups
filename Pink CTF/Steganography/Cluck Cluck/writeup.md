@@ -1,6 +1,8 @@
 Flag: PINK{Cluck_Cluck_you_are_a_duck!}
-Category: Steganography (WAV LSB and Chicken esolang)
-Tools used: Python (wave, numpy, matplotlib), a small Chicken esolang interpreter (solve.py)
+Category: Steganography (WAV LSB plus Chicken code)
+Tools used: Python (wave, numpy, matplotlib)
+
+Brief: The handout was chicken.wav, a 60 s audio file with a flag hidden somewhere in it.
 
 Steps:
 1. Start point: chicken.wav (10.5 MB, 60 s)
@@ -12,7 +14,7 @@ Steps:
    - Dead end: the cluck pitches looked like they could spell something, but they rise by a constant ~4,950 Hz each time and fold back at the Nyquist limit (22,050 Hz). They follow a formula, so they carry no data. The tones' amplitude and frequency also demodulate to smooth curves with no data, and the left/right difference is just a slow pan.
    - Thinking: the audible layer is a decoy.
 
-     ![Spectrogram with the clucks](screenshots/01_spectrogram_clucks.png)
+     ![Spectrogram of chicken.wav: a low chord band and 21 short cluck spikes between 1 kHz and 21 kHz](screenshots/01_spectrogram_clucks.png)
 
 3. Pivot: the low bit planes
    - What I did: split every sample into bit planes and checked each plane for repetition over time.
@@ -24,7 +26,7 @@ Steps:
    - Result: magic "CHKN", a 4-byte length (0x0011C133 = 1,163,571 bytes), then "chicken chicken chicken ..." over 2,276 lines.
    - Thinking: "chicken" repeated on separate lines is the Chicken esoteric language: each line is one instruction, and the opcode is the number of times the word "chicken" appears on it. The short repeating LSB cycle was the word "chicken " over and over, and the occasional breaks in it were the newlines.
 
-     ![CHKN header and payload start](screenshots/02_lsb_chkn_header.png)
+     ![Extracted payload: CHKN magic, length 1,163,571 bytes, then chicken repeated](screenshots/02_lsb_chkn_header.png)
 
 5. Pivot: running the Chicken program
    - What I did: wrote a ~40-line interpreter (opcodes: 0 axe, 1 chicken, 2 add, 3 fox, 4 rooster, 5 compare, 6 pick, 7 peck, 8 fr, 9 BBQ, n>=10 push n-10) and ran it.

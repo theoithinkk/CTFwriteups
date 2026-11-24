@@ -1,5 +1,5 @@
 Flag: PacketCapture{w4YbAcK_R0ck5_s0_coO1}
-Category: OSINT
+Category: OSINT (Wayback CDX prefix search)
 Tools used: Wayback Machine CDX API, Wayback raw snapshot viewer (id_ mode), curl, Python
 
 Steps:
@@ -34,14 +34,13 @@ Steps:
      ![Raw JSON of the flag tweet](screenshots/02_flag_tweet_raw.png)
 
 5. Pivot: reading the thread as a whole.
-   - Result: the five tweets in order (the flag is the second):
+   - Result: the five tweets in order, with the flag PacketCapture{w4YbAcK_R0ck5_s0_coO1} in the second:
 
      ![The archived thread](screenshots/03_thread_text.png)
 
    - Thinking: the flag reads "Wayback rocks so cool", which confirms the intended path. The next tweet ("the
-     handwriting's wrong") is flavour text rather than a second layer.
-   - Care point: copy the flag exactly from the raw JSON. It has an underscore between "s0" and "coO1".
+     handwriting's wrong") is flavour text rather than a second layer. I copied the flag exactly from the raw JSON, which has an underscore between "s0" and "coO1".
 
-Key insight: Deleted or hidden posts can still exist in web archives. For X/Twitter, search both x.com and
+Key insight: A CDX prefix query on twitter.com found archived tweets that the x.com lookup missed, and the id_ raw capture showed the flag tweet. For X/Twitter, search both x.com and
 twitter.com, use the CDX API with matchType=prefix to list every captured URL under a profile (including individual
 tweets), and add id_ to read the raw capture.

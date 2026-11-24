@@ -1,54 +1,50 @@
 Flag: CSCTF{flotsam_0e91019a8e70267f550895930247d088}
 Category: Forensics (fragmented PNG carving)
-Target: recorder-sectors.img (35,840 bytes, 70 x 512-byte sectors, raw chip-off flash dump, no filesystem)
-Tools used: Python (re, struct, zlib, PIL), xxd-style hex inspection
-
-Challenge: The voyage data recorder from MV Ortelia was read chip-off, so the allocation tables are gone.
-Somewhere in the dump is a PNG chart frame showing the vessel's last fix, with a recovery key printed on it.
-Hint: "A file that opens is not the same as a file that is whole."
+Tools used: Python (re, struct, zlib, PIL)
+Brief: The voyage data recorder from MV Ortelia was read chip-off, so the allocation tables are gone, and somewhere in the dump is a PNG chart frame of the vessel's last fix with a recovery key printed on it. The hint says "A file that opens is not the same as a file that is whole." The target was recorder-sectors.img (35,840 bytes, 70 x 512-byte sectors, no filesystem).
 
 Steps:
-1. Recon.
-   - Walked the image in 512-byte sectors. Sectors 0-2 and 48-51 are NMEA text ($GPRMC lines), sectors
-     22-33 start with a JPEG header (FF D8 FF E0, JFIF), sector 52 starts with the PNG magic, and sectors 21,
-     34, 42-43 and 68-69 are all zeros. The rest is high-entropy data.
-   - Searching for magics: PNG header at 0x6800 (sector 52), but the only IEND is at 0x5E97 (sector 47),
-     i.e. BEFORE the header. That alone says the PNG is fragmented. The JPEG is a decoy.
-   (screenshots/01_magics_and_fragmentation.png, screenshots/02_sector_map.png)
+1. Start point: map the raw recorder dump
+   - What I did: walked recorder-sectors.img, a raw chip-off flash dump with no filesystem, in 512-byte sectors and searched it for file magics with find_magics.py.
+   - What I found: the sectors fall into a few kinds:
+     - NMEA text ($GPRMC lines) in sectors 0 to 2 and 48 to 51
+     - a JPEG header (FF D8 FF E0, JFIF) at sector 22, running through sector 33
+     - the PNG magic at 0x6800 (sector 52)
+     - all-zero sectors 21, 34, 42, 43, 68 and 69
+     - high-entropy data everywhere else
+   - What I found: the only IEND is at 0x5E97 (sector 47), before the PNG header.
+   - Thinking: an IEND that sits before its own header means the PNG is fragmented, and the JPEG has nothing to do with a PNG chart frame, so I treated it as a decoy.
 
-2. Naive carve (the trap).
-   - Cutting from the PNG header to the end of the dump (sectors 52-67, 16 sectors of data, then zeros)
-     gives a file that opens: 760x520 with a viewer that tolerates truncation. But the bottom is black and the
-     recovery key is missing. This is the "opens but is not whole" case.
-   - Parsing the chunks showed IHDR (13 bytes) followed by ONE IDAT of 22,630 bytes. The PNG needs
-     8 + 25 + 22,642 + 12 = 22,687 bytes = 45 sectors, but only 16 sit after the header. 29 sectors are elsewhere.
-   (screenshots/03_naive_carve.png)
+     ![find_magics.py output: PNG magic at sector 52 but the only IEND at sector 47, plus the JPEG decoy at sector 22](screenshots/01_magics_and_fragmentation.png)
 
-3. Rebuild the fragment chain.
-   - Counting the non-zero, non-text, non-JPEG runs gives exactly 29 sectors: A = 3-20 (18), B = 35-41 (7),
-     C = 44-47 (4, ends with the IEND chunk). The zero sectors are the gaps between fragments.
-   - Head (52-67) followed by A, B, C in some order. Because the IDAT chunk has a CRC32, the order can be
-     checked: head+A+B+C gives a matching CRC32 over IDAT+data, head+B+A+C does not.
-   - Trimmed to 22,687 bytes (the IEND trailer ends mid-sector 47, 159 bytes in).
-   (screenshots/03b_crc_check.png)
+     ![Sector map: PNG head (52-67), fragments A (3-20), B (35-41) and C (44-47), the JPEG decoy and the zero gaps](screenshots/02_sector_map.png)
 
-4. Read the key.
-   - Opened the reassembled PNG: "VDR CHART FRAME - RECOVERED", a track with a LAST FIX marker, and the
-     footer line "RECOVERY KEY (transcribe exactly)": CSCTF{flotsam_0e91019a8e70267f550895930247d088}
-   (screenshots/04_recovered_chart_frame.png)
+2. Dead end: the naive carve opens but is cut off
+   - What I did: cut from the PNG header to the end of the data (sectors 52 to 67, 16 sectors, then zeros).
+   - What I found: the file opens as 760x520 in a viewer that tolerates truncation, but the bottom is black and the recovery key is missing.
+   - What I found: the chunks are IHDR (13 bytes) then a single IDAT of 22,630 bytes. The whole PNG needs 8 + 25 + 22,642 + 12 = 22,687 bytes, which is 45 sectors, but only 16 sit after the header.
+   - Thinking: this is exactly the hint's "opens but is not whole" case, and the IDAT length says 29 sectors are somewhere else.
 
-Reproduce: python3 solve.py recorder-sectors.img (tries both fragment orders, keeps the one whose IDAT CRC
-matches, writes recovered_chart_frame.png).
+     ![The naive carve opens but is cut off: black bottom and no recovery key](screenshots/03_naive_carve.png)
 
-Key insight: Header and footer carving fails on fragmented files. When the flash is read raw, a file's sectors
-can be scattered, so "header to next IEND" or "header to end of data" gives a truncated or wrong file.
-Use the format's own integrity data (PNG chunk lengths and CRC32) to confirm reassembly, and count how many
-sectors the file should occupy to know how much is missing. The sector 21/34/42/43 zero gaps were the clue that
-the file was split.
+3. Pivot: rebuild the fragment chain with the IDAT CRC
+   - What I found: the non-zero runs that are not text and not JPEG add up to exactly 29 sectors, with the zero sectors as the gaps between them:
+     - fragment A: sectors 3 to 20 (18 sectors)
+     - fragment B: sectors 35 to 41 (7 sectors)
+     - fragment C: sectors 44 to 47 (4 sectors, ends with the IEND chunk)
+   - What I did: put the head (52 to 67) first and C last, tried A and B in both orders, and checked the CRC32 over the IDAT type and data. Head plus A, B, C matches; head plus B, A, C does not.
+   - What I did: trimmed the result to 22,687 bytes, since the IEND chunk ends 159 bytes into sector 47.
+   - Thinking: C must be last because it holds IEND, and the IDAT CRC32 only matches when every byte is in place, so it settles the middle order.
 
-Screenshots:
-  screenshots/01_magics_and_fragmentation.png  - magic/IEND offsets (python find_magics.py recorder-sectors.img)
-  screenshots/02_sector_map.png                - sector layout and fragment colours
-  screenshots/03_naive_carve.png               - truncated carve, key missing
-  screenshots/03b_crc_check.png                - CRC verification
-  screenshots/04_recovered_chart_frame.png     - complete frame with the recovery key
+     ![solve.py: the head+A+B+C order passes the IDAT CRC and writes 22687 bytes](screenshots/03b_crc_check.png)
+
+4. Flag: read the key off the rebuilt chart frame
+   - What I found: the reassembled PNG shows "VDR CHART FRAME - RECOVERED", a track ending at a LAST FIX marker, and the footer "RECOVERY KEY (transcribe exactly)" with the key below it.
+   - Thinking: the CRC had already proved the bytes whole, so the footer the naive carve lost could be read as printed.
+   - Result: CSCTF{flotsam_0e91019a8e70267f550895930247d088}
+
+     ![The reassembled chart frame with the recovery key in the footer](screenshots/04_recovered_chart_frame.png)
+
+Key insight: The chip-off PNG was split into four sector runs, and the IDAT chunk's own length and CRC32 told me how many sectors were missing and which order was right. Carving from the header to the end of the data gives a file that opens but is truncated, and the zero-sector gaps at 21, 34, 42 and 43 were the clue that it was split.
+Defensive takeaways: A recovered file that opens is not proof it is whole, so check carved evidence against its own format's lengths and CRCs before relying on it.
+Reproduce: python -I solve.py recorder-sectors.img (keeps the fragment order whose IDAT CRC matches and writes recovered_chart_frame.png)

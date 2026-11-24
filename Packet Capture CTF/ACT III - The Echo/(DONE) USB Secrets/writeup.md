@@ -1,5 +1,5 @@
 Flag: PacketCapture{DEVICE_HISTORY}
-Category: Forensics
+Category: Forensics (hex-encoded USB serial)
 Tools used: text editor, Python
 
 Steps:
@@ -18,11 +18,12 @@ Steps:
      chunk is valid hex. It starts with 50 61 63 6B, which is "Pack" in ASCII. A comment in the export also flags it:
      "serial number does not match any known vendor format".
 
-3. Decoding.
+3. Decode: hex-decode the serial chunks
    - What I did: removed the "&" separators and the trailing "&0" instance suffix, then hex-decoded the rest.
+   - Thinking: each 8-hex-digit chunk is 4 bytes of ASCII, so joining them reads directly as text.
    - Result: Pack | etCa | ptur | e{DE | VICE | _HIS | TORY | } = PacketCapture{DEVICE_HISTORY}
 
      ![Hex-decoding the serial chunks](screenshots/02_serial_hex_decode.png)
 
-Key insight: know what a normal artifact looks like (vendor, product, rev, serial) so the field that breaks the pattern
-stands out. Hex that starts with 50 61 63 6B is "Pack", the start of the flag format.
+Key insight: One USBSTOR device had a serial split into 8-character hex chunks that decode to PacketCapture{DEVICE_HISTORY}. Knowing what a normal artifact looks like (vendor, product, rev, serial) makes the field that breaks the pattern
+stand out. Hex that starts with 50 61 63 6B is "Pack", the start of the flag format.

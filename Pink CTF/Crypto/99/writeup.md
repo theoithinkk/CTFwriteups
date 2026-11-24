@@ -1,26 +1,28 @@
 Flag: PINK{NiNeTyNiNeQwErTzEs}
-Category: Crypto (QWERTZ-99 factoring)
-Tools used: Python (Pillow), curl, trial-division factoring
+Category: Crypto (factoring a multiplicative password)
+Tools used: Python (Pillow)
 
 Brief: The challenge was "99, 98, 4ll w31rd numb3rs. 4nd wh4t th3 h3ll 1s 4 .qmap f1l3??" It gave me secure.png (a 25x25 pixel-noise image), pink.qmap, and a free hint: 978b8b8f8cc5d0d098968b978a9dd19c9092d0aea8baadaba59a879ad0aea8baadaba5d2c6c6
 
 Steps:
 1. Start point: the hint hex
-   - What I found: the first byte 0x97 XOR 0xFF is 0x68, which is "h". Flipping every bit (bitwise NOT) of every byte gives https://github.com/QWERTZexe/QWERTZ-99.
+   - What I did: took the first byte of the hint, 0x97, and XORed it with 0xFF. That gives 0x68, which is "h".
+   - Result: flipping every bit (bitwise NOT) of every byte gives https://github.com/QWERTZexe/QWERTZ-99.
    - Thinking: a URL that starts with "http" has a recognisable first byte. 0x97 is exactly the inverse of "h", so the whole string is just NOT-ed.
 
 2. Pivot: reading the QWERTZ-99 source
-   - What I found, the .qmap format: [QMAP]{c:3}{s:1}(ord|code)... Every character (stored as its ord) maps to a 3-digit code. c:3 is the code width and s:1 means "98 mode" is supported.
-   - What I found, encoding ("99"): concatenate each character's code, then append "99" as a terminator.
-   - What I found, salting ("98"): drop the "99" and multiply the number by a password number P = int(concatenated password codes) * (product of every password code). Then append "-98".
-   - What I found, the image: one symbol per pixel (0-9, or 11 for "-"). Each pixel holds two masked copies of the symbol, (num+m1, m1) and (m2, num+m2), and which RGBA channel goes first rotates with the pixel index (idx % 4). Decoding means taking the two differences and keeping the pixel only when both agree.
+   - What I found: the .qmap format is [QMAP]{c:3}{s:1}(ord|code)... Every character (stored as its ord) maps to a 3-digit code. c:3 is the code width and s:1 means "98 mode" is supported.
+     - Encoding ("99"): concatenate each character's code, then append "99" as a terminator.
+     - Salting ("98"): drop the "99" and multiply the number by a password number P = int(concatenated password codes) * (product of every password code). Then append "-98".
+   - What I found: the image holds one symbol per pixel (0-9, or 11 for "-"). Each pixel holds two masked copies of the symbol, (num+m1, m1) and (m2, num+m2), and which RGBA channel goes first rotates with the pixel index (idx % 4). Decoding means taking the two differences and keeping the pixel only when both agree.
    - Thinking: this is security through obscurity. The masks are stored right next to the data they hide, so the image is an encoding, not encryption.
 
 3. Pivot: decoding the image
    - What I did: reimplemented the pixel decoder in Python.
    - Result: a 620-digit number ending in "-98", so the message was salted with an unknown password: N = M * P.
+   - Thinking: the source said "98" means a password multiplier, and the decoded number ends in "-98", so the next job was finding P.
 
-     ![secure.png: the 25x25 pixel-noise handout (shown upscaled)](screenshots/01_secure_png_noise.png)
+     ![secure.png: the 25x25 pixel-noise handout, shown upscaled](screenshots/01_secure_png_noise.png)
 
 4. Pivot: recovering the password without a wordlist
    - Dead end: I tried common words (pink, qwertz, secure, 99...) and every printable password up to 3 characters. Nothing divided N exactly.
@@ -36,8 +38,8 @@ Steps:
 
      ![Live solve run printing both layers and the flag](screenshots/02_solve_run.png)
 
-Key insight: QWERTZ-98 "encryption" is multiplication by a number derived from the password, and multiplication leaks structure. The password's factors survive inside the ciphertext, so factoring the ciphertext's small primes reveals the password with no brute force. Real ciphers mix the key and data so that nothing about the key can be read back out of the output. Obscure formats and stacked encodings add effort, not security.
+Key insight: QWERTZ-98 salting multiplies the message by a number built from the password, so the password's prime factors survive in the ciphertext and trial division reveals it with no wordlist. Real ciphers mix the key and data so that nothing about the key can be read back out of the output. Obscure formats and stacked encodings add effort, not security.
 
-Reproduce: run python solve.py secure.png pink.qmap. It prints both layers and asserts the flag.
+Reproduce: run python -I solve.py secure.png pink.qmap. It prints both layers and asserts the flag.
 
 Note: pink.qmap is missing exactly one printable character, "_" (ord 95). That made me suspect underscores in the flag at first, so I relaxed my "decodes cleanly" check to tolerate one unknown code. In the end the flag has none.

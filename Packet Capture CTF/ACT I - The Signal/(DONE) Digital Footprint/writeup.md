@@ -1,5 +1,5 @@
 Flag: PacketCapture{3Ven_1f_i_D1s4ppe4r_tH3_W0rld_r3Memb3rs}
-Category: OSINT
+Category: OSINT (Reddit archive pivot)
 Tools used: curl, Arctic Shift Reddit archive (API and web search), Python, grep
 
 Steps:
@@ -31,7 +31,7 @@ Steps:
 
 4. Pivot: u/Axusismynameom's other posts.
    - What I did: searched the archive for that author's posts and grepped for "PacketCapture{".
-   - Result: in r/PaperDreams, a post titled with the flag (2026-07-30), next to two "I Dream Of A Pallid World" posts.
+   - Result: in r/PaperDreams, a post titled PacketCapture{3Ven_1f_i_D1s4ppe4r_tH3_W0rld_r3Memb3rs} (2026-07-30), next to two "I Dream Of A Pallid World" posts.
    - Thinking: the flag text itself ("even if I disappear, the world remembers") confirms the intended lesson.
 
      ![Flag post by u/Axusismynameom in r/PaperDreams](screenshots/03_flag_post_archive.png)
@@ -39,5 +39,4 @@ Steps:
 Note: live Reddit pages block automated browsers (reCAPTCHA / network block), so all screenshots come from the
 Arctic Shift archive, which is also the tool that solved the challenge.
 
-Key insight: Bans and deletions remove content from the live site, not from the internet. Archives keep it, and
-following the people instead of the place shows where a community moved.
+Key insight: A ban hides a subreddit from the live site but not from the Arctic Shift archive, and following its members to their new sub led to the flag post. Following the people instead of the place shows where a community moved.

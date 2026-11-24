@@ -1,5 +1,5 @@
 Flag: PacketCapture{L34K3D_R3P0_D1SC0V3R3D_DAB2A78}
-Category: OSINT
+Category: OSINT (git history secret)
 Tools used: GitHub CLI (gh api), grep
 
 Steps:
@@ -21,8 +21,8 @@ Steps:
 3. Pivot: the diffs.
    - What I did: pulled every commit's patch with gh api and grepped for "PacketCapture{" and "KEY".
    - Result: the real key was added in commit 413705f ("rotate relay key") and removed in 55a64f3
-     ("remove exposed credentials"); the removal diff still shows it in red. Two other flag-shaped values also appear
-     in the history:
+     ("remove exposed credentials"); the removal diff still shows it in red. Three flag-shaped values appear
+     in the history, two decoys and the real key:
      - API_KEY=PacketCapture{DECOY_ENDPOINT}
      - BACKUP_KEY=PacketCapture{RELAY_BACKUP_KEY}
      - API_KEY=PacketCapture{L34K3D_R3P0_D1SC0V3R3D_DAB2A78}
@@ -32,9 +32,10 @@ Steps:
 
      ![Commit 55a64f3 removing the leaked key](screenshots/03_diff_leaked_key.png)
 
-4. Verification: submit the real flag
+4. Flag: submit the real flag
    - What I did: submitted the third value.
-   - Result: the site accepted it.
+   - Thinking: the third value is the only one that comes from the removed key, and it reads as a sentence.
+   - Result: the site accepted PacketCapture{L34K3D_R3P0_D1SC0V3R3D_DAB2A78}.
 
 Key insight: Deleting a secret in a new commit doesn't remove it from git history. Always read the diffs, not just
 the latest files, and expect decoys when several flag-shaped strings appear.

@@ -14,6 +14,7 @@ Steps:
    - What I did: found the scheme in the Luna source: a 40-byte header, then a keystream made by 3DES-encrypting a counter block, XORed over the data, then raw deflate, then a TIXC0100 token stream. Rather than reimplement it, I ran the TnsTools decoder on the file.
    - Result: Document.xml (1166 B) and Problem1.xml (57640 B) decoded with the stored sizes and CRCs both matching. A grep for the flag format immediately found PINK{th1s_15_4_f4k3_fl4g} in Problem1.xml.
    - Dead end: the string literally says it is a fake flag, so I treated it as a decoy and kept looking in the same file.
+   - Thinking: a flag that calls itself fake is bait, so the real one had to be elsewhere in the same file.
 
 3. Pivot: inspect the figure's objects
    - What I did: Problem1.xml is a TI GeoGrapher figure. I listed every text, point and segment object with its coordinates.

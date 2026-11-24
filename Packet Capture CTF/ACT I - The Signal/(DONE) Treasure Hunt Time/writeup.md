@@ -1,10 +1,11 @@
 Flag: PacketCapture{85.36,81.05}
-Category: OSINT
-Tools used: Python (Pillow) for image metadata, what3words, DMS coordinate conversion
+Category: OSINT (what3words from file name)
+Tools used: Python (Pillow) for image metadata, TinEye, steghide (Docker), what3words, DMS coordinate conversion
 
 Steps:
 1. Start point: treasurehunttrip.jpg from MediaFire.
-   - What I found: a stock-style photo of a treasure map scene. Nothing in the picture itself names a place.
+   - What I found: a stock photo of an open treasure chest, a map, a compass and a spyglass on a beach. Nothing in the picture itself names a place.
+   - Thinking: nothing visible names a place, so the clue had to be in the file or the brief. I checked the metadata first.
 
      ![treasurehunttrip.jpg](screenshots/01_treasurehunttrip.jpg)
 
@@ -23,6 +24,7 @@ Steps:
      words the challenge gives are in the file name: treasure / hunt / trip.
 
 4. Pivot: ///treasure.hunt.trip on what3words.
+   - Thinking: the three words from the file name are the only three-word address the challenge gives, so I looked that one up.
    - Result: a square at -85.600191, -81.091278, in Antarctica (the map shows nothing there, which is expected).
 
      ![///treasure.hunt.trip](screenshots/03_what3words_treasure_hunt_trip.png)
@@ -32,6 +34,7 @@ Steps:
      85deg 36' 00.69" S, 81deg 05' 28.60" W.
    - Thinking: "LeadNo deg TrailNo" means the number before the degree sign (degrees) and the number right after it
      (minutes), written as degrees.minutes: 85.36 and 81.05.
+   - Result: PacketCapture{85.36,81.05} was accepted.
    - Dead ends:
      - PacketCapture{-85.60, -81.09} (decimal degrees rounded) was rejected: the brief asks for DMS, not decimal.
      - The format shown in the brief, PacketCapture{00.00, 00.00}, has a space after the comma, but the accepted flag
@@ -39,5 +42,4 @@ Steps:
 
      ![Decimal to DMS to degrees.minutes](screenshots/04_dms_conversion.png)
 
-Key insight: When the file says "wrong hole", go back to the brief. Here the coordinates came from the file name
-(what3words), and the hard part was formatting: DMS degrees.minutes, no signs, no space.
+Key insight: The metadata comment was a decoy, and the coordinates came from the file name as the what3words address treasure.hunt.trip. The hard part was formatting: DMS degrees.minutes, no signs, no space.

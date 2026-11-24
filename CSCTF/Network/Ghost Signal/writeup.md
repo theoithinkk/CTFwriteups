@@ -1,33 +1,32 @@
-Challenge: Ghost Signal - Network / Hard / 540 pts / author: Dragoș Bacitea (CSCTF 2026)
 Flag: CSCTF{28358943}
 Category: Network (SS7 Diameter billing correlation)
-Tools used: Python (stdlib: json, re, hashlib, collections), solve.py
-
-Brief: A telecom operator sees fraudulent roaming activity and disputed billing events, and investigators recovered SS7 signalling, Diameter sessions and the billing export (ss7_capture.pcap, diameter_capture.pcap, billing_events.json). I had to reconstruct the intrusion chain offline and recover its marker. The flag is the first 8 lowercase hex of SHA-256 of IMSI:SESSION_ID:FIRST_ANOMALOUS_BILLING_TIMESTAMP, values exactly as written.
+Tools used: Python (standard library)
+Challenge: Ghost Signal (CSCTF 2026, Network, Hard, 540 pts, author: Dragoș Bacitea)
+Brief: A telecom operator saw fraudulent roaming and disputed billing, and investigators recovered SS7 signalling, Diameter sessions and the billing export. The flag is the first 8 lowercase hex of SHA-256 of IMSI:SESSION_ID:FIRST_ANOMALOUS_BILLING_TIMESTAMP, values exactly as written.
 
 Steps:
-1. Start point: catalogue the three files
-   - What I found: ss7_capture.pcap holds SS7 MAP messages over M3UA (the 2G/3G roaming signalling layer). diameter_capture.pcap holds Diameter requests and answers between the CSCFs and the HSS (the LTE/IMS side). billing_events.json is the OCS billing export (provider eastern-tele.ro).
-   - Thinking: the flag needs an IMSI, a session ID and a timestamp, and three artifacts each probably hold one piece, so the plan is to find a value that appears in all three.
-   - Result: three sources to cross-reference.
 
-     ![Ghost Signal - briefing](screenshots/01_briefing.png)
+1. Start point: the three evidence files
+   - What I did: opened ss7_capture.pcap, diameter_capture.pcap and billing_events.json to see what each layer holds.
+   - What I found: the SS7 capture holds MAP messages over M3UA (the 2G/3G roaming signalling). The Diameter capture holds requests and answers between the CSCFs and the HSS (the LTE/IMS side). billing_events.json is the OCS export for eastern-tele.ro, 40 events, and its metadata says to "filter by the IMSI and session corroborated by the signalling captures".
+   - Thinking: the marker needs an IMSI, a session ID and a timestamp, and the billing note ties them to the captures, so I looked for the one identity that threads all three files.
 
-2. Pivot: find the one hidden identity
-   - What I found: in the billing export every normal subscriber has a 16-digit IMSI (2260120140002xxx), but one IMSI is only 15 digits: 226012014000001. Every event carrying an anomaly field belongs to it, all within a single session hss.eastern-tele.ro;1723740150;49211 (zero_charge_on_roaming writes and an unusual_routing_path pivot).
-   - Thinking: the malformed IMSI is the odd one out, so it is the attacker's thread to pull.
-   - Result: candidate IMSI and session ID.
+     ![Ghost Signal briefing on the CSCTF 2026 scoreboard: the three attachments and the SHA-256 marker recipe](screenshots/01_briefing.png)
 
-3. Pivot: trace the identity through both captures
-   - What I did: SS7 MAP stores the IMSI as TBCD (nibble-swapped, f-padded), so I decoded the length-8 IMSI fields. In Diameter I searched the same IMSI.
-   - Thinking: confirming the IMSI in both captures before trusting the billing record proves the thread.
-   - Result: 226012014000001 appears in 5 SS7 messages, so first contact is on the SS7 side. It appears in 4 Diameter messages in the same session 49211, where the request comes from cscf.rogue.evil-domain.net and the answer redirects to a pivot CSCF with diameter://intercept-49211.evil-domain.net.
+2. Pivot: one 15-digit IMSI owns every anomaly
+   - What I found: every normal subscriber in the billing export has a 16-digit IMSI (2260120140002xxx), but one is only 15 digits: 226012014000001. Every event with an anomaly field belongs to it, all in session hss.eastern-tele.ro;1723740150;49211: five zero_charge_on_roaming CCR-I events and five unusual_routing_path CCA events.
+   - Thinking: the malformed IMSI is the odd one out and carries every anomaly, so it is the attacker's thread. The billing note says to trust it only once the signalling corroborates it, so both pcaps came next.
 
-4. Result: build the marker
-   - What I did: the billing events are not stored in time order, so I sorted by timestamp. The first anomalous event is at 1723740150. I hashed 226012014000001:hss.eastern-tele.ro;1723740150;49211:1723740150 and took the first 8 hex, 28358943.
-   - Thinking: sorting matters because the marker depends on the earliest anomalous timestamp, not the first one in the file.
-   - Result: running python -I solve.py prints IMSI 226012014000001 (SS7 x5, Diameter x4), the session, the first anomalous timestamp 1723740150 and CSCTF{28358943}.
+3. Pivot: the same IMSI in SS7 and Diameter
+   - What I did: SS7 MAP stores the IMSI as TBCD (nibble-swapped, f-padded), so I decoded every length-8 IMSI field. In the Diameter capture I searched for the IMSI as plain digits.
+   - Result: 226012014000001 appears in 5 SS7 messages and in 4 Diameter messages in session 49211. There the request comes from cscf.rogue.evil-domain.net and the answer redirects to a pivot CSCF with diameter://intercept-49211.evil-domain.net.
+   - Thinking: with the identity confirmed in both captures, the billing record could be trusted for the session ID and the timestamp.
 
-Key insight: The whole case is a cross-reference exercise, because the attacker's IMSI is deliberately the only malformed 15-digit one and the single value present in all three artifacts. Confirming it in SS7 (TBCD-decoded) and Diameter before trusting the billing record proves the thread, and sorting the out-of-order billing events pins the first anomalous timestamp the marker depends on.
+4. Flag: building the marker
+   - What I did: sorted the billing events by timestamp, took the earliest anomalous one (1723740150), hashed 226012014000001:hss.eastern-tele.ro;1723740150;49211:1723740150 with SHA-256 and kept the first 8 hex.
+   - Thinking: the export is not stored in time order, so I sorted instead of trusting file order. Here the earliest anomalous event also came first in the file, but nothing guaranteed that.
+   - Result: CSCTF{28358943}. python -I solve.py prints the IMSI (SS7 x5, Diameter x4), the session, the timestamp 1723740150 and this flag.
 
-Defensive takeaways: Fraud like this only shows up when signalling and billing data are correlated, so operators should join SS7, Diameter and charging records on subscriber identity and alert on malformed identifiers, zero-charge roaming writes and requests from unexpected CSCF domains. Filtering at the signalling edge for rogue peers and unusual routing paths would stop the pivot before billing is affected.
+Key insight: The attacker's IMSI was the only malformed 15-digit one and the one value present in SS7, Diameter and billing, so cross-referencing the three files exposed the chain. Confirming it in both captures before trusting the billing record proves the thread, and sorting the billing events pins the first anomalous timestamp.
+Defensive takeaways: Fraud like this only shows up when signalling and billing data are correlated, so operators should join SS7, Diameter and charging records on subscriber identity and alert on malformed identifiers, zero-charge roaming writes and requests from unexpected CSCF domains. Filtering rogue peers and unusual routing paths at the signalling edge would stop the pivot before billing is affected.
+Reproduce: python -I solve.py billing_events.json ss7_capture.pcap diameter_capture.pcap

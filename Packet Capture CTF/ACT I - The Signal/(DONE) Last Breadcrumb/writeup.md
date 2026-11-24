@@ -1,6 +1,6 @@
 Flag: PacketCapture{magentatexturemofsj7hk44wtsh762nv46lt3bnprcmttbaqxknux66rnaddmyd}
-Category: OSINT
-Tools used: curl, yt-dlp, Mastodon public API, Ubuntu PGP keyserver, gpg, steghide/stegseek (Docker), Python
+Category: OSINT (breadcrumb pivots, split flag)
+Tools used: curl, yt-dlp, Mastodon public API, Ubuntu PGP keyserver, stegseek (Docker), Python
 
 Steps:
 1. Start point: MALgenta.zip from MediaFire.
@@ -37,7 +37,7 @@ Steps:
      PacketCapture{thisIsNotTheFlag} and a few odd names (blueflair, stillwhite, coraltjsipw...).
    - Dead ends: I spent a long time treating the odd names as usernames on other sites; they led only to real,
      unrelated people (one is a Roblox YouTuber), which the rules say not to pursue.
-   - Thinking that worked: "Key Name" + email is exactly how a PGP keyring lists keys, the Mastodon bio says
+   - Thinking: "Key Name" + email is exactly how a PGP keyring lists keys, the Mastodon bio says
      "Missing second key", and Magenta is the one obvious colour missing from the list. So the missing key is probably
      a real PGP key published under that email domain.
 
@@ -59,7 +59,7 @@ Steps:
 
      ![The crossroad account](screenshots/07_mastodon_m4g3ntatxtre_crossroad.png)
 
-7. Path A, the wrong key.
+7. Dead end: Path A, the wrong key
    - What I did: read the CreepyLink redirect without opening it. It pointed to a MediaFire image, onionfromdinoera.jpg
      (a magenta onion). stegseek confirmed hidden steghide data, and a dictionary attack recovered the passphrase
      "missing". The payload linked to a file named PacketCapture{0ld_k3ys_n0_W0rr1es}.asc.
@@ -70,7 +70,7 @@ Steps:
 
      ![stegseek output](screenshots/08b_stegseek_wrong_key.png)
 
-8. Path B, the sibling.
+8. Pivot: Path B, the sibling video
    - What I did: opened youtube.com/watch?v=irCgPekP6sg.
    - Result: an unlisted video, "Hansel and Grettel", by @MagentaHideout. It is a magenta/black checkerboard (the
      "world of two colors" from Intel 3). Its description is
@@ -80,12 +80,12 @@ Steps:
 
      ![The Hansel and Grettel video](screenshots/09_hansel_grettel_video.png)
 
-9. Reuniting the siblings.
+9. Flag: reuniting the siblings
    - Thinking: Intel 3 says the other half "is found at the final destination", which is the Final Destination Short
      from step 2 (screenshot 03). Intel 2 and 4 say the "house" is back on the original breadcrumb trail. The only
      text that Short carries besides the hash is its description, "magentatexture".
-   - Result: PacketCapture{ + magentatexture + mofsj7hk44wtsh762nv46lt3bnprcmttbaqxknux66rnaddmyd} was accepted.
-   - Note: I had tried "magentatexture" on its own early on (rejected) and the tail on its own (rejected). Neither half
+   - Result: PacketCapture{magentatexturemofsj7hk44wtsh762nv46lt3bnprcmttbaqxknux66rnaddmyd} was accepted (PacketCapture{ + magentatexture + the tail from step 8).
+   - Dead end: I had tried "magentatexture" on its own early on (rejected) and the tail on its own (rejected). Neither half
      works alone, which is the whole point of "reunite the two siblings".
 
 Key insight: Each pivot reuses the latest clue on a site already visited (hash > YouTube > Mastodon > paste > PGP

@@ -1,5 +1,5 @@
 Flag: PacketCapture{p3rf3ctly_P13c3D}
-Category: OSINT
+Category: OSINT (Drive owner pivot)
 Tools used: Google Drive API (file owner lookup), GitHub commit search, username OSINT, Instagram, X/Twitter, email
 
 Steps:
@@ -55,10 +55,11 @@ Steps:
      eldest turtles as their @ in this site".
    - Thinking: the third hint says "no one would tell me where my turtles are... please contact me". Putting the two
      bios together, the last step is to contact the owner's email with the answer to the question in @NamoorKrommer's
-     bio (the two turtles, Namoor and Krommer). Doing that returned the flag.
+     bio (the two turtles, Namoor and Krommer).
+   - Result: contacting the owner's email with the two turtle names returned the flag, PacketCapture{p3rf3ctly_P13c3D}.
 
      ![@Clovendadoor with the contact email](screenshots/06_x_clovendadoor.png)
 
-Key insight: Every identity here is linked, not named. The sheet's metadata gives the email, the email gives GitHub,
+Key insight: The sheet's owner email linked it to GitHub, Instagram and X, and the final step was emailing the owner with the turtle names, not searching. Every identity here is linked, not named: the metadata gives the email, the email gives GitHub,
 the username gives Instagram and X, and the rules on one platform (odd/even, 2-7) decode the list on another. The
-final step isn't a search at all: the hints and bios tell you to contact the owner.
+hints and bios said to contact the owner.

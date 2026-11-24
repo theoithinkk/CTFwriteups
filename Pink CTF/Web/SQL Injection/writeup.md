@@ -26,10 +26,10 @@ Steps:
    - Result: the page returns "Access granted: PINK{0x5C_is_not_always_a_backslash}".
    - Thinking: OR 1=2-- - is still denied, which confirms it is the injection logging me in and not a lucky guess.
 
-Key insight: Escaping characters is not the same as parameterizing a query, and the flag says it outright: 0x5C is not always a backslash. addslashes and mysqli_real_escape_string prepend 0x5C to a quote, but on a multibyte connection (GBK and similar) a lead byte can consume that 0x5C, so the quote survives.
+Key insight: A raw 0xBF byte before the quote swallowed the escaper's 0x5C backslash on a multibyte connection, so the quote survived and broke out of the SQL string. Escaping is not parameterizing, and the flag says so: 0x5C is not always a backslash. addslashes and mysqli_real_escape_string prepend 0x5C to a quote, but on a multibyte connection (GBK and similar) a lead byte can consume that 0x5C, so the quote survives.
 
 Defensive takeaways: The real fixes are prepared statements with bound parameters, where the data never re-enters the SQL text, and setting the connection charset to utf8mb4 with mysqli_set_charset so the escaper and the server agree on byte boundaries.
 
-Reproduce: run python solve.py. It sends the 0xBF payload, prints the flag, and checks true against false. As a one-liner: curl -s https://sqli.pink.bayern/ --data-binary 'username=%BF%27%20OR%201=1--%20-&password=x'
+Reproduce: run python -I solve.py. It sends the 0xBF payload, prints the flag, and checks true against false. As a one-liner: curl -s https://sqli.pink.bayern/ --data-binary 'username=%BF%27%20OR%201=1--%20-&password=x'
 
 Note: there is no screenshot, because reproduction requires the live challenge server, which is now unavailable.

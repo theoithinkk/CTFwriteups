@@ -1,5 +1,5 @@
 Flag: PacketCapture{STEGO_DECODED}
-Category: Steganography
+Category: Steganography (LSB, red channel only)
 Tools used: Python (Pillow)
 
 Steps:
@@ -16,9 +16,9 @@ Steps:
      B separately and RGB interleaved.
    - Result: G and B gave only runs of 0x00/0xFF (no data), and RGB interleaved was noise. The red channel alone
      gave readable ASCII, terminated by a null byte:
-     FLAG:PacketCapture{STEGO_DECODED}
+     - FLAG:PacketCapture{STEGO_DECODED}
+   - Thinking: the message sat in red only, so mixing the three channels into one bit stream scrambled it.
 
      ![LSB extraction: only the red channel carries the message](screenshots/02_lsb_extraction.png)
 
-Key insight: test each colour channel's LSB on its own as well as interleaved. Here the message was only in red, so the
-common "RGB interleaved" extraction gives garbage.
+Key insight: The message was hidden in the least significant bit of the red channel only, so the usual RGB-interleaved extraction returned garbage. Test each colour channel's LSB on its own as well as interleaved.

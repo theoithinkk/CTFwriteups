@@ -12,7 +12,7 @@ Steps:
      phrase "on purpose, all at once" rules out services that faded away slowly; it points to a company deliberately
      shutting the whole service down on a single date.
 
-2. Pivot: which hosting service fits "millions of pages" and a deliberate mass deletion.
+2. Pivot: GeoCities fits the mass deletion
    - What I did: compared the big free hosts of the era (GeoCities, Angelfire, Tripod).
    - Result: GeoCities is the one that matches. Angelfire and Tripod still exist. GeoCities hosted tens of millions of
      pages, and Yahoo, which bought it in 1999, closed it and deleted every user page at once.
@@ -24,19 +24,20 @@ Steps:
      before deletion).
    - Result: Yahoo announced the closure in April 2009, stopped new sign-ups, and deleted GeoCities on
      26 October 2009.
-   - Screenshot (the infobox says "Inactive since October 26, 2009", and the article notes the Japan version
-     lasted until 2019):
+   - Thinking: the brief asks for the date the pages vanished, so the deletion date counts, not the announcement.
+   - What I found: the infobox says "Inactive since October 26, 2009", and the article notes the Japan version
+     lasted until 2019.
 
      ![GeoCities Wikipedia article](screenshots/01_geocities_wikipedia.png)
-   - Dead ends / care point: GeoCities Japan was a separate service that ran until 31 March 2019. The brief describes
+   - Dead end: GeoCities Japan was a separate service that ran until 31 March 2019. The brief describes
      the main service whose millions of pages vanished all at once, so the 2009 US shutdown date is the one asked for.
      The announcement date (April 2009) is also not the deletion date.
 
-4. Formatting the flag.
+4. Flag: format the answer
    - Thinking: the template is NAME_DDMONYEAR, so the name is uppercase with no spaces, the day is two digits, the
      month is a three-letter abbreviation, and the year has four digits: GEOCITIES_26OCT2009.
    - Result: PacketCapture{GEOCITIES_26OCT2009} was accepted.
 
-Key insight: The description itself is the search query. Turn era-specific details (blinking text, guestbooks,
+Key insight: The brief's details (blinking text, guestbooks, counters, a deliberate mass deletion) pointed to GeoCities, and Wikipedia pinned the deletion to 26 October 2009. Turn era-specific details (blinking text, guestbooks,
 visitor counters, "Under Construction") into a candidate, then pin the exact date with a primary source, watching
 for near-miss dates (the announcement date, or a regional spin-off that closed later).
